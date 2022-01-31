@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #SingleInstance Force
 
 Folder = E:\Downloads
-CURL=C:\users\jim\Downloads\curl-7.75.0_5-win64-mingw\curl-7.75.0-win64-mingw\Bin\curl.exe  
+CURL=C:\users\jim\Downloads\curl-7.75.0_5-win64-mingw\curl-7.75.0-win64-mingw\Bin\curl.exe 
 
 Loop, %Folder%\*.stl {
      FileGetTime, Time, %A_LoopFileFullPath%, C
@@ -23,7 +23,8 @@ ZcodeFile = % RegExReplace(File,"i).stl$",".zcode")
 ;Return
 
 
-Run taskkill /F /IM Z-SUITE.exe
+Runwait taskkill /F /IM Z-SUITE.exe
+Runwait powershell del '%Folder%\%ZcodeFile%'
 Sleep 2000
 Run "C:\Program Files\Zortrax\Z-Suite\Z-SUITE.exe" "%Folder%\%File%"
 WinWait Z-SUITE
@@ -65,14 +66,16 @@ if WinExist("Z-SUITE") {
 		;MsgBox %c% 
 		if (c == 0xf48d35) { 
 			MouseClick, left, 832,269
-			Sleep 1000
+			Sleep 2000
 			ControlClick, Button2, Save
-			Sleep 1000
+			Sleep 2000
 			if (WinExist("Save")) { 
 				ControlClick, Button1, Save
 			}
-			Sleep 1000
-			Run %CURL% -v --form "file=@%Folder%\%ZcodeFile%"  http://192.168.4.3/upload.cgi
+			Sleep 2000
+
+			Runwait powershell (Get-Item '%Folder%\%ZcodeFile%').LastWriteTime=(Get-Date -Year 2000 -Day 1 -Month 1 -Hour 1 -Minute 1 -Second 0)
+			Runwait %CURL% -v --form "file=@%Folder%\%ZcodeFile%"  http://192.168.4.3/upload.cgi
 
 			WinExist("Z-SUITE")
 			WinActivate	
