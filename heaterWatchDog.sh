@@ -6,6 +6,7 @@
  
 WEBCAM="http://192.168.4.196:8080/video"
 CROP="100x100+235+210"
+THRESHOLD=6000
 
 while sleep 1; do 
 	# 1) Grab webcam frame as photo.jpg
@@ -21,7 +22,7 @@ while sleep 1; do
 	ERR=`compare -metric MAE -subimage-search photo-c.jpg e.jpg diff.tiff 2>&1 | cut '-d ' -f 1`
 	ERR=`printf %.0f $ERR`  # Convert from float to integer 
 	if test $ERR -gt 0; then
-		if test $ERR -lt 5500 -a $ERR -gt 0; then 
+		if test $ERR -lt $THRESHOLD -a $ERR -gt 0; then 
 			ECOUNT=$(($ECOUNT + 1))
 			if [[ $ECOUNT -gt 20 ]]; then 
 				mosquitto_pub -h rp1.local -t '/circreset' -m ''
