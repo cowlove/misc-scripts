@@ -13,22 +13,19 @@ while sleep 1; do
 	# 3) Search for relative match with target image e.jpg
 	# 4) After fixed number of consecutive matches, reset the heater  
 
-	rm -f photo.jpg photo-c.jpg 
 	#wget http://192.168.4.196:8080/photoaf.jpg -O photo.jpg
 	ffmpeg -nostats -hide_banner -i $WEBCAM -frames:v 1 -y photo.jpg > /dev/null 2>&1 || continue 
-
 	convert photo.jpg -crop $CROP -colorspace gray -threshold 80% -blur 1x2 photo-c.jpg || continue 
 
-	# useful -metric values:  MAE MEPP MSE RMSE  PSNR
+	# useful compare -metric values:  MAE MEPP MSE RMSE  PSNR
 	ERR=`compare -metric MAE -subimage-search photo-c.jpg e.jpg diff.tiff 2>&1 | cut '-d ' -f 1`
-	montage e.jpg photo-c.jpg diff.tiff m.jpg
 	ERR=`printf %.0f $ERR`  # Convert from float to integer 
 	if test $ERR -gt 0; then
 		if test $ERR -lt 5500 -a $ERR -gt 0; then 
 			ECOUNT=$(($ECOUNT + 1))
 			if [[ $ECOUNT -gt 20 ]]; then 
 				mosquitto_pub -h rp1.local -t '/circreset' -m ''
-				cp photo-c.jpg err.`date +%s`.jpg
+				cp photo-c.jpg err.`date +%s`.jpg # For debugging, save image that caused reset 
 				ECOUNT=0
 			fi
 		else
@@ -36,8 +33,9 @@ while sleep 1; do
 		fi
     fi 
 	
-	POW=`mosquitto_sub -h rp1.local -t 'circpower' -C 1`
-	echo `date +%s` $ERR $POW $ECOUNT | tee -a log.txt
+	POW=`mosquitto_sub -h rp1.local -t 'circpower' -C 1` # Note if power is currently on 
+	echo `date +%s` $ERR $POW $ECOUNT | tee -a log.txt   # Log data 
+	montage e.jpg photo-c.jpg diff.tiff m.jpg  # Make a thumbnail image for visual debugging 
 
 done 
 
